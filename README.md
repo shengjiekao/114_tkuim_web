@@ -1,2 +1,9 @@
 # 114_tkuim_web
 114_tkuim_web
+資管3C 網路程式設計
+
+## 0917
+- 完成 Github 倉庫建立
+- 嘗試 git clone專案
+- 嘗試推送檔案
+- 加入 test.html
