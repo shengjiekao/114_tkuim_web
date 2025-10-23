@@ -2,7 +2,6 @@
 // 以函式封裝 BMI 計算、等級判斷與理想區間檢查
 
 function calcBMI(heightCm, weightKg) {
-  // 將身高轉換為公尺
   var h = heightCm / 100;
   var bmi = weightKg / (h * h);
   return bmi;
@@ -26,7 +25,6 @@ function bmiLevel(bmi) {
   return level;
 }
 
-// 🧩 新增函式：判斷是否為理想範圍（18.5~24）
 function isIdeal(bmi) {
   return (bmi >= 18.5 && bmi < 24);
 }

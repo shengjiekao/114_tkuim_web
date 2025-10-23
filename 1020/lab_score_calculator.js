@@ -27,7 +27,6 @@ if (!name) {
   name = '同學';
 }
 
-// 🧩 讀入五科成績
 var s1 = toNumber(prompt('請輸入 國文 成績：'));
 var s2 = toNumber(prompt('請輸入 英文 成績：'));
 var s3 = toNumber(prompt('請輸入 數學 成績：'));
