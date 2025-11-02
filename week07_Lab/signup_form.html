@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>註冊表單</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="container" aria-labelledby="form-title">
+    <h1 id="form-title">註冊帳號</h1>
+
+    <form id="signup-form" novalidate>
+      <div id="form-status" class="status" role="status" aria-live="polite"></div>
+
+      <div class="field">
+        <label for="name">姓名 <span class="req">*</span></label>
+        <input id="name" name="name" type="text" required
+               aria-describedby="name-help name-error" />
+        <p id="name-help" class="help">請輸入真實姓名。</p>
+        <p id="name-error" class="error" aria-live="polite"></p>
+      </div>
+
+      <div class="field">
+        <label for="email">Email <span class="req">*</span></label>
+        <input id="email" name="email" type="email" required
+               inputmode="email"
+               aria-describedby="email-help email-error" />
+        <p id="email-help" class="help">將用於登入與通知。</p>
+        <p id="email-error" class="error" aria-live="polite"></p>
+      </div>
+
+      <div class="field">
+        <label for="phone">手機 <span class="req">*</span></label>
+        <input id="phone" name="phone" type="text" required
+               inputmode="numeric" pattern="\\d{10}"
+               aria-describedby="phone-help phone-error" />
+        <p id="phone-help" class="help">必須為 10 碼數字（不含符號）。</p>
+        <p id="phone-error" class="error" aria-live="polite"></p>
+      </div>
+
+      <div class="field">
+        <label for="password">密碼 <span class="req">*</span></label>
+        <input id="password" name="password" type="password" required
+               minlength="8" aria-describedby="pw-help pw-strength-text pw-error" />
+        <p id="pw-help" class="help">至少 8 碼，需同時包含英文字母與數字。</p>
+
+        <div class="strength" aria-hidden="true">
+          <div id="pw-strength-bar" class="bar"></div>
+        </div>
+        <p id="pw-strength-text" class="strength-text" aria-live="polite">強度：尚未輸入</p>
+
+        <p id="pw-error" class="error" aria-live="polite"></p>
+      </div>
+
+      <div class="field">
+        <label for="confirm">確認密碼 <span class="req">*</span></label>
+        <input id="confirm" name="confirm" type="password" required
+               aria-describedby="confirm-help confirm-error" />
+        <p id="confirm-help" class="help">需與上方密碼一致。</p>
+        <p id="confirm-error" class="error" aria-live="polite"></p>
+      </div>
+
+      <fieldset class="field">
+        <legend>興趣標籤 <span class="req">*</span></legend>
+        <p id="tags-help" class="help">至少勾選 1 個。</p>
+        <div id="tags" class="tags" role="group" aria-describedby="tags-help tags-error">
+          <label class="tag">
+            <input type="checkbox" name="tags" value="coding" /> 程式設計
+          </label>
+          <label class="tag">
+            <input type="checkbox" name="tags" value="gaming" /> 電玩
+          </label>
+          <label class="tag">
+            <input type="checkbox" name="tags" value="music" /> 音樂
+          </label>
+          <label class="tag">
+            <input type="checkbox" name="tags" value="movie" /> 電影
+          </label>
+          <label class="tag">
+            <input type="checkbox" name="tags" value="sport" /> 運動
+          </label>
+        </div>
+        <p id="tags-error" class="error" aria-live="polite"></p>
+      </fieldset>
+
+      <div class="field inline">
+        <input id="tos" name="tos" type="checkbox" required
+               aria-describedby="tos-error" />
+        <label for="tos">我已閱讀並同意服務條款</label>
+        <p id="tos-error" class="error" aria-live="polite"></p>
+      </div>
+
+      <div class="actions">
+        <button id="submitBtn" type="submit" class="btn primary">送出</button>
+        <button id="resetBtn" type="button" class="btn">重設</button>
+      </div>
+    </form>
+  </main>
+
+  <script src="signup_form.js"></script>
+</body>
+</html>
