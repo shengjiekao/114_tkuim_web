@@ -1,61 +1,100 @@
-// routes/signup.js
 import { Router } from 'express';
 import { nanoid } from 'nanoid';
 
-const router = Router();
-const participants = [];
+export const router = Router();
 
-const requiredFields = ['name', 'email', 'phone', 'password', 'interests'];
+const signups = [];
 
-function validatePayload(body) {
-  for (const field of requiredFields) {
-    if (!body[field]) {
-      return `${field} 為必填`; 
+function validateSignup(body) {
+  const errors = {};
+
+  const name = String(body.name || '').trim();
+  const email = String(body.email || '').trim();
+  const phone = String(body.phone || '').trim();
+  const password = String(body.password || '');
+  const confirmPassword = String(body.confirmPassword || '');
+  const interests = Array.isArray(body.interests) ? body.interests : [];
+  const terms = Boolean(body.terms);
+
+  if (!name) {
+    errors.name = '請填寫姓名。';
+  }
+
+  if (!email) {
+    errors.email = '請填寫 Email。';
+  } else {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      errors.email = 'Email 格式不正確。';
     }
   }
-  if (!/^09\d{8}$/.test(body.phone)) {
-    return '手機需為 09 開頭 10 碼';
+
+  if (!phone) {
+    errors.phone = '請填寫手機號碼。';
+  } else if (!/^\d{10}$/.test(phone)) {
+    errors.phone = '手機號碼需為 10 碼數字。';
   }
-  if (!Array.isArray(body.interests) || body.interests.length === 0) {
-    return '至少選擇一個興趣';
+
+  if (!password) {
+    errors.password = '請輸入密碼。';
+  } else {
+    const hasLetter = /[A-Za-z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    if (password.length < 8 || !hasLetter || !hasNumber) {
+      errors.password = '密碼至少 8 碼，且需包含英文字母與數字。';
+    }
   }
-  if (body.password.length < 8) {
-    return '密碼需至少 8 碼';
+
+  if (!confirmPassword) {
+    errors.confirmPassword = '請再次輸入密碼。';
+  } else if (password !== confirmPassword) {
+    errors.confirmPassword = '兩次輸入的密碼不一致。';
   }
-  if (body.password !== body.confirmPassword) {
-    return '密碼與確認密碼不一致';
+
+  if (!interests.length) {
+    errors.interests = '請至少勾選一個興趣標籤。';
   }
-  return null;
+
+  if (!terms) {
+    errors.terms = '請勾選同意服務條款。';
+  }
+
+  const isValid = Object.keys(errors).length === 0;
+
+  return {
+    isValid,
+    errors,
+    values: { name, email, phone, interests },
+  };
 }
 
-router.get('/', (req, res) => {
-  res.json({ total: participants.length, data: participants });
-});
-
 router.post('/', (req, res) => {
-  const errorMessage = validatePayload(req.body || {});
-  if (errorMessage) {
-    return res.status(400).json({ error: errorMessage });
+  const { isValid, errors, values } = validateSignup(req.body);
+
+  if (!isValid) {
+    return res.status(400).json({
+      message: '欄位驗證失敗。',
+      errors,
+    });
   }
-  const newParticipant = {
-    id: nanoid(8),
-    name: req.body.name,
-    email: req.body.email,
-    phone: req.body.phone,
-    interests: req.body.interests,
-    createdAt: new Date().toISOString()
+
+  const record = {
+    id: nanoid(),
+    ...values,
+    createdAt: new Date().toISOString(),
   };
-  participants.push(newParticipant);
-  res.status(201).json({ message: '報名成功', participant: newParticipant });
+
+  signups.push(record);
+
+  return res.status(201).json({
+    message: '報名成功！',
+    data: record,
+  });
 });
 
-router.delete('/:id', (req, res) => {
-  const index = participants.findIndex((item) => item.id === req.params.id);
-  if (index === -1) {
-    return res.status(404).json({ error: '找不到這位參與者' });
-  }
-  const [removed] = participants.splice(index, 1);
-  res.json({ message: '已取消報名', participant: removed });
+router.get('/', (req, res) => {
+  res.json({
+    total: signups.length,
+    data: signups,
+  });
 });
-
-export { router };
