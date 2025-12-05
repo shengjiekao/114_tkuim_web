@@ -1,0 +1,43 @@
+### 建立報名
+# @name createReq
+POST http://localhost:3001/api/signup
+Content-Type: application/json
+
+{
+  "name": "新同學",
+  "email": "new@example.com",
+  "phone": "0911222333"
+}
+
+### 更新剛剛那筆（phone 或 status）
+PATCH http://localhost:3001/api/signup/{{createReq.response.body.id}}
+Content-Type: application/json
+
+{
+  "phone": "0911000111"
+}
+
+### 取得清單
+GET http://localhost:3001/api/signup
+
+### 刪除剛剛那筆
+DELETE http://localhost:3001/api/signup/{{createReq.response.body.id}}
+
+### 刪除後再看一次清單
+GET http://localhost:3001/api/signup
+
+### 再用同一個 email 報名（應該要 400 + 友善錯誤）
+POST {{createReq.response.body.id}}/api/signup
+Content-Type: application/json
+
+{
+  "name": "新同學2",
+  "email": "new@example.com",
+  "phone": "0999888777"
+}
+
+### 分頁測試：第 1 頁、每頁 3 筆
+GET {{createReq.response.body.id}}/api/signup?page=1&limit=3
+
+### 分頁測試：第 2 頁、每頁 3 筆
+GET {{createReq.response.body.id}}/api/signup?page=2&limit=3
