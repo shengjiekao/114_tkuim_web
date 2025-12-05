@@ -1,83 +1,65 @@
 # Week11 報名系統 API
 
-這是一個使用 Node.js、Express 與 MongoDB 實作的簡單報名系統後端專案。  
-功能包含：
+這是一個使用 **Node.js + Express + MongoDB** 實作「報名系統」後端。
 
-- 新增報名（POST /api/signup）
-- 查詢報名清單（GET /api/signup，支援分頁）
-- 更新報名的電話與狀態（PATCH /api/signup/:id）
-- 刪除特定報名（DELETE /api/signup/:id）
-- 針對 `email` 建立唯一索引，避免同一個 email 重複報名，並回傳友善錯誤訊息
+---
 
 
-### 使用技術
+- `POST /api/signup`：建立報名並回傳 `_id`
+- `GET /api/signup`：取得清單，支援分頁 `?page=1&limit=10`
+- `PATCH /api/signup/:id`：更新 `phone` 或 `status`
+- `DELETE /api/signup/:id`：刪除特定報名
+- `participants.email` 具有 **唯一索引**，避免重複 email 報名，API 會回傳友善錯誤訊息
 
-- Node.js + Express
-- MongoDB（搭配 Docker 啟動）
-- 原生 MongoDB Node.js Driver
-- CORS
-- dotenv（管理環境變數）
-- VS Code REST Client / Postman（API 測試）
+---
 
-### 目錄結構（節錄）
+## 一、環境需求（Environment）
+
+- Node.js：建議 **v18 以上**
+- npm
+- Docker、Docker Compose
+- VS Code（建議安裝 REST Client 外掛）
+- MongoDB Compass（檢視資料用，非必須）
+
+---
+
+## 二、環境變數（.env 管理 Mongo URI / 帳號 / 密碼）
+
+在 `Week11` 目錄下建立 `.env` 檔案，內容範例：
+
+```env
+PORT=3001
+MONGODB_URI=mongodb://week11-user:week11-pass@localhost:27017/week11?authSource=week11
+ALLOWED_ORIGIN=http://localhost:5173
+
+---
+
+## 專案結構
+
+以 `Week11` 資料夾為專案根目錄：
 
 Week11/
+├─ docker/
+│  ├─ docker-compose.yml
+│  └─ mongo-init.js
 ├─ server/
 │  ├─ app.js
 │  ├─ db.js
 │  ├─ routes/
 │  │  └─ signup.js
-│  └─ repositories/
-│     └─ participants.js
-├─ docker/
-│  ├─ docker-compose.yml
-│  └─ mongo-init.js
-├─ api.http          # VS Code REST Client 測試檔
-├─ package.json
-└─ .env
+│  ├─ repositories/
+│  │  └─ participants.js
+│  ├─ package.json
+│  └─ package-lock.json
+├─ tests/
+│  └─ api.http             
+├─ docs/
+│  └─ screenshots/      
+├─ .env                   
+└─ README.md
 
-## 測試方式
+---
 
-本專案提供兩種主要測試方式：
+### MongoDB Compass – participants 集合
 
-1. 使用 VS Code REST Client（或 Postman）測試 API  
-2. 使用 Mongo Shell 直接查詢資料庫內容與索引
-
-### 1. 建立報名
-# @name createReq
-POST {{baseUrl}}/api/signup
-Content-Type: application/json
-
-{
-  "name": "新同學",
-  "email": "new@example.com",
-  "phone": "0911222333"
-}
-
-### 更新剛剛那筆（phone 或 status）
-PATCH {{baseUrl}}/api/signup/{{createReq.response.body.id}}
-Content-Type: application/json
-
-{
-  "phone": "0911000111"
-}
-
-### 取得清單（支援分頁）
-GET {{baseUrl}}/api/signup?page=1&limit=10
-
-### 刪除剛剛那筆
-DELETE {{baseUrl}}/api/signup/{{createReq.response.body.id}}
-
-### 刪除後再看一次清單
-GET {{baseUrl}}/api/signup
-
-### 測試重複 email 報名（觸發唯一索引錯誤）
-POST {{baseUrl}}/api/signup
-Content-Type: application/json
-
-{
-  "name": "新同學2",
-  "email": "new@example.com",
-  "phone": "0999888777"
-}
-
+![Compass participants](docs/screenshots/{E75B75CE-4DB3-4861-94E5-CF67F4E47ED7}.png)
