@@ -1,0 +1,8 @@
+# Node modules
+server/node_modules/
+
+# MongoDB data
+docker/mongo-data/
+
+# local env
+.env
