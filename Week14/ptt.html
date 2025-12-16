@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>批踢踢實業坊 PTT Web</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Using Google Fonts for a terminal-like appearance -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Roboto+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <div class="terminal-container">
+        <!-- Navigation Bar -->
+        <header class="navbar">
+            <div class="brand">批踢踢實業坊(Ptt.cc)</div>
+            <div class="nav-controls">
+                <input type="text" id="search-input" placeholder="搜尋看板..." autocomplete="off">
+                <nav>
+                    <a href="#">看板列表</a>
+                    <a href="#">熱門看板</a>
+                    <a href="#" id="login-btn">登入</a>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main>
+            <!-- Hot Boards Section -->
+            <section id="hot-boards">
+                <div class="section-title">
+                    <span class="highlight">【 熱門看板 】</span>
+                </div>
+                <div class="board-grid" id="hot-boards-container">
+                    <!-- Javascript will populate this -->
+                </div>
+            </section>
+
+            <!-- Board List Section -->
+            <section id="board-list">
+                <div class="section-title">
+                    <span class="highlight">【 看板列表 】</span>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>看板名稱</th>
+                                <th>類別</th>
+                                <th>標題</th>
+                                <th class="text-right">人氣</th>
+                            </tr>
+                        </thead>
+                        <tbody id="board-list-body">
+                            <!-- Javascript will populate this -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer>
+            <div class="status-bar">
+                <span id="user-status">目前使用者: guest</span>
+                <span id="system-time"></span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modal for Board Interaction -->
+    <div id="modal" class="modal-overlay hidden">
+        <div class="modal-window">
+            <div class="modal-title">系統訊息</div>
+            <div class="modal-content" id="modal-text"></div>
+            <div class="modal-footer">
+                <button id="modal-ok-btn">[ 確定 ]</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
