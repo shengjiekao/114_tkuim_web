@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week 12 Auth App</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Auth Views -->
+        <div id="auth-view" class="view-section">
+            <h2 id="auth-title">登入</h2>
+            <div id="auth-error" class="error-message"></div>
+            <form id="auth-form">
+                <input type="email" id="email" placeholder="Email" required>
+                <input type="password" id="password" placeholder="密碼" required>
+                <!-- Role selection only for signup -->
+                <div id="role-group" style="display: none;">
+                   <label><input type="radio" name="role" value="student" checked> 學生</label>
+                   <label><input type="radio" name="role" value="admin"> 管理員</label>
+                </div>
+                <button type="submit" id="auth-submit-btn">登入</button>
+            </form>
+            <div class="auth-switch">
+                <span id="auth-switch-text">還沒有帳號？</span>
+                <a id="auth-switch-link">註冊</a>
+            </div>
+        </div>
+
+        <!-- Dashboard View -->
+        <div id="dashboard-view" class="view-section">
+            <header>
+                <h1>報名系統</h1>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <span id="user-info"></span>
+                    <button id="logout-btn" class="secondary">登出</button>
+                </div>
+            </header>
+
+            <div class="card">
+                <h3>新增報名</h3>
+                <form id="add-form" style="max-width: 100%; flex-direction: row; flex-wrap: wrap;">
+                    <input type="text" id="add-name" placeholder="姓名" required>
+                    <input type="email" id="add-email" placeholder="Email" required>
+                    <input type="tel" id="add-phone" placeholder="電話" required>
+                    <button type="submit">新增</button>
+                </form>
+            </div>
+
+            <h3 style="margin-top: 30px;">報名列表</h3>
+            <div id="dashboard-error" class="error-message"></div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>姓名</th>
+                        <th>Email</th>
+                        <th>電話</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="data-list">
+                    <!-- Data here -->
+                </tbody>
+            </table>
+            <div id="pagination" style="margin-top: 10px; display: flex; gap: 5px; justify-content: center;">
+                <!-- Pagination buttons -->
+            </div>
+        </div>
+    </div>
+    <script src="js/app.js"></script>
+</body>
+</html>
