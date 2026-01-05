@@ -1,11 +1,8 @@
 :root {
     --bg-color: #000000;
     --text-color: #bfa;
-    /* Classic PTT Light Green */
     --highlight-color: #ffff00;
-    /* Yellow for highlights */
     --link-color: #00ffff;
-    /* Cyan for links */
     --border-color: #444;
     --card-bg: #111;
     --card-hover: #222;
@@ -47,7 +44,6 @@ a:hover {
     flex-direction: column;
 }
 
-/* Navbar */
 .navbar {
     display: flex;
     justify-content: space-between;
@@ -90,7 +86,6 @@ a:hover {
     font-weight: bold;
 }
 
-/* Section Common */
 .section-title {
     margin-bottom: 20px;
     font-size: 1.2rem;
@@ -102,8 +97,6 @@ a:hover {
     color: var(--highlight-color);
     font-weight: bold;
 }
-
-/* Hot Boards Grid */
 .board-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -142,7 +135,6 @@ a:hover {
     color: var(--highlight-color);
 }
 
-/* Board List Table */
 .table-container {
     overflow-x: auto;
 }
@@ -187,7 +179,6 @@ tbody tr:hover {
     color: #ccc;
 }
 
-/* Footer & Status Bar */
 footer {
     margin-top: auto;
     border-top: 2px solid var(--text-color);
@@ -201,7 +192,6 @@ footer {
     justify-content: space-between;
 }
 
-/* Modal Styles */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -221,7 +211,6 @@ footer {
     width: 400px;
     max-width: 90%;
     padding: 2px;
-    /* Inner border effect */
     box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
 }
 
