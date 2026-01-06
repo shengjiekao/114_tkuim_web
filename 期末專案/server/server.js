@@ -12,21 +12,25 @@ app.use(express.json());
 app.use(express.static('../client')); // Serve static files from client folder
 
 // Database Connection
-mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-})
-    .then(() => console.log('MongoDB Connected'))
+const seedEvents = require('./seedEvents');
+
+mongoose.connect(process.env.MONGO_URI)
+    .then(async () => {
+        console.log('MongoDB Connected');
+        await seedEvents();
+    })
     .catch(err => console.error('MongoDB Connection Error:', err));
 
 const eventsRouter = require('./routes/events');
 const registrationsRouter = require('./routes/registrations');
 const usersRouter = require('./routes/users');
+const authRouter = require('./routes/auth');
 
 // Routes
 app.use('/api/events', eventsRouter);
 app.use('/api/registrations', registrationsRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/auth', authRouter);
 
 app.get('/', (req, res) => {
     res.send('Campus Event System API is running');
