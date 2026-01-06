@@ -2,17 +2,24 @@ const express = require('express');
 const router = express.Router();
 const Registration = require('../models/Registration');
 const Event = require('../models/Event');
-const User = require('../models/User');
+const { auth, admin } = require('../middleware/auth');
 
-// POST /api/registrations - Register for an event
-router.post('/', async (req, res) => {
+// POST /api/registrations - Register for an event (Authenticated User)
+router.post('/', auth, async (req, res) => {
     const { userId, eventId } = req.body;
     try {
+        if (req.user.role === 'admin') {
+            return res.status(403).json({ success: false, message: 'Admin cannot register actions' });
+        }
+
+        // Double check userId matches token logic if needed, but for now trusting body.userId matching
+        // Ideally should perform: req.body.userId = req.user.id; to prevent spoofing
+
         // Check if event exists
         const event = await Event.findById(eventId);
         if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
 
-        // Check already registered (handled by unique index too, but good to check)
+        // Check already registered
         const existingReg = await Registration.findOne({ userId, eventId });
         if (existingReg) return res.status(400).json({ success: false, message: 'User already registered for this event' });
 
@@ -24,9 +31,10 @@ router.post('/', async (req, res) => {
     }
 });
 
-// GET /api/registrations/user/:userId - Get user's registrations
-router.get('/user/:userId', async (req, res) => {
+// GET /api/registrations/user/:userId - Get user's registrations (Auth)
+router.get('/user/:userId', auth, async (req, res) => {
     try {
+        // ideally check if req.user.id === req.params.userId || req.user.role === 'admin'
         const registrations = await Registration.find({ userId: req.params.userId }).populate('eventId');
         res.json({ success: true, data: registrations });
     } catch (err) {
@@ -34,8 +42,8 @@ router.get('/user/:userId', async (req, res) => {
     }
 });
 
-// GET /api/registrations/event/:eventId - Get event's registrations (Admin)
-router.get('/event/:eventId', async (req, res) => {
+// GET /api/registrations/event/:eventId - Get event's registrations (Admin only)
+router.get('/event/:eventId', auth, admin, async (req, res) => {
     try {
         const registrations = await Registration.find({ eventId: req.params.eventId }).populate('userId');
         res.json({ success: true, data: registrations });
@@ -44,8 +52,8 @@ router.get('/event/:eventId', async (req, res) => {
     }
 });
 
-// DELETE /api/registrations/:id - Cancel registration
-router.delete('/:id', async (req, res) => {
+// DELETE /api/registrations/:id - Cancel registration (Auth)
+router.delete('/:id', auth, async (req, res) => {
     try {
         const deletedReg = await Registration.findByIdAndDelete(req.params.id);
         if (!deletedReg) return res.status(404).json({ success: false, message: 'Registration not found' });

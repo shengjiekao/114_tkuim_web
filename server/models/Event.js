@@ -20,6 +20,10 @@ const eventSchema = new mongoose.Schema({
     maxParticipants: {
         type: Number,
         default: 50
+    },
+    image: {
+        type: String,
+        required: false
     }
 }, { timestamps: true });
 

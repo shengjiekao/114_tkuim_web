@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const Event = require('../models/Event');
+const { auth, admin } = require('../middleware/auth');
 
-// GET /api/events - Get all events
+// GET /api/events - Get all events (Public)
 router.get('/', async (req, res) => {
     try {
         const events = await Event.find().sort({ date: 1 });
@@ -12,7 +13,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-// GET /api/events/:id - Get single event
+// GET /api/events/:id - Get single event (Public)
 router.get('/:id', async (req, res) => {
     try {
         const event = await Event.findById(req.params.id);
@@ -23,11 +24,11 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// POST /api/events - Create event
-router.post('/', async (req, res) => {
-    const { title, description, date, location, maxParticipants } = req.body;
+// POST /api/events - Create event (Admin only)
+router.post('/', auth, admin, async (req, res) => {
+    const { title, description, date, location, maxParticipants, image } = req.body;
     try {
-        const newEvent = new Event({ title, description, date, location, maxParticipants });
+        const newEvent = new Event({ title, description, date, location, maxParticipants, image });
         const savedEvent = await newEvent.save();
         res.status(201).json({ success: true, data: savedEvent, message: 'Event created successfully' });
     } catch (err) {
@@ -35,8 +36,8 @@ router.post('/', async (req, res) => {
     }
 });
 
-// PUT /api/events/:id - Update event
-router.put('/:id', async (req, res) => {
+// PUT /api/events/:id - Update event (Admin only)
+router.put('/:id', auth, admin, async (req, res) => {
     try {
         const updatedEvent = await Event.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!updatedEvent) return res.status(404).json({ success: false, message: 'Event not found' });
@@ -46,8 +47,8 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// DELETE /api/events/:id - Delete event
-router.delete('/:id', async (req, res) => {
+// DELETE /api/events/:id - Delete event (Admin only)
+router.delete('/:id', auth, admin, async (req, res) => {
     try {
         const deletedEvent = await Event.findByIdAndDelete(req.params.id);
         if (!deletedEvent) return res.status(404).json({ success: false, message: 'Event not found' });

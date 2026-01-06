@@ -2,21 +2,132 @@ const API_URL = 'http://localhost:3000/api';
 
 // --- Utils ---
 async function fetchData(endpoint, options = {}) {
+    const token = localStorage.getItem('token');
+    const headers = {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+    };
+
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
     try {
         const response = await fetch(`${API_URL}${endpoint}`, {
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            ...options
+            ...options,
+            headers
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Something went wrong');
         return data;
     } catch (error) {
-        alert(error.message);
+        if (error.message === 'Invalid token' || error.message.includes('jwt')) {
+            logout(); // Auto logout on token error
+        }
         console.error(error);
+        alert(error.message);
         return null;
     }
+}
+
+// --- Auth Functions ---
+let currentUser = null;
+
+function initAuth() {
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+
+    if (token && userStr) {
+        currentUser = JSON.parse(userStr);
+        updateUI();
+    }
+}
+
+function updateUI() {
+    const loginBtn = document.getElementById('loginBtn');
+    const userInfo = document.getElementById('userInfo');
+    const createEventBtn = document.getElementById('createEventBtn');
+
+    if (currentUser) {
+        loginBtn.textContent = '登出';
+        loginBtn.onclick = logout;
+        userInfo.textContent = `Hi, ${currentUser.name} (${currentUser.role === 'admin' ? '管理員' : '學生'})`;
+        createEventBtn.style.display = currentUser.role === 'admin' ? 'block' : 'none';
+
+        // Refresh views if needed
+        loadEvents('events-list', currentUser.role !== 'admin');
+    } else {
+        loginBtn.textContent = '登入 / 註冊';
+        loginBtn.onclick = openLoginModal;
+        userInfo.textContent = '';
+        createEventBtn.style.display = 'none';
+        loadEvents('events-list', true); // Default view
+    }
+}
+
+async function login(email, password) {
+    const result = await fetchData('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password })
+    });
+
+    if (result && result.success) {
+        localStorage.setItem('token', result.data.token);
+        localStorage.setItem('user', JSON.stringify(result.data.user));
+        currentUser = result.data.user;
+        closeAuthModals();
+        updateUI();
+        alert('登入成功');
+    }
+}
+
+async function register(name, email, password, role) {
+    const result = await fetchData('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ name, email, password, role })
+    });
+
+    if (result && result.success) {
+        localStorage.setItem('token', result.data.token);
+        localStorage.setItem('user', JSON.stringify(result.data.user));
+        currentUser = result.data.user;
+        closeAuthModals();
+        updateUI();
+        alert('註冊成功');
+    }
+}
+
+function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('userId'); // Cleanup legacy
+    localStorage.removeItem('userRole'); // Cleanup legacy
+    localStorage.removeItem('userName'); // Cleanup legacy
+    currentUser = null;
+    updateUI();
+    showSection('events');
+    alert('已登出');
+}
+
+// --- Modal Logic ---
+function openLoginModal() {
+    document.getElementById('loginModal').classList.add('show');
+    document.getElementById('registerModal').classList.remove('show');
+}
+
+function openRegisterModal() {
+    document.getElementById('registerModal').classList.add('show');
+    document.getElementById('loginModal').classList.remove('show');
+}
+
+function switchModal(type) {
+    if (type === 'login') openLoginModal();
+    else openRegisterModal();
+}
+
+function closeAuthModals() {
+    document.getElementById('loginModal').classList.remove('show');
+    document.getElementById('registerModal').classList.remove('show');
 }
 
 // --- Event Functions ---
@@ -27,15 +138,13 @@ async function loadEvents(containerId, isStudent = true) {
 
     container.innerHTML = result.data.map(event => `
         <div class="card">
+            <div class="card-image" style="background-image: url('${(event.image && event.image.startsWith('http')) ? event.image : 'images/' + (event.image || 'default.jpg')}');"></div>
             <div class="card-body">
                 <h3 class="card-title">${event.title}</h3>
                 <div class="card-subtitle">
-                    <span>📅 ${new Date(event.date).toLocaleDateString()}</span>
-                    <span>📍 ${event.location}</span>
-                </div>
-                <p class="card-text">${event.description}</p>
-                <div class="card-subtitle">
-                   <span>👥 Max: ${event.maxParticipants}</span>
+                    <div class="event-detail"><span>日期：</span>${new Date(event.date).toLocaleDateString()}</div>
+                    <div class="event-detail"><span>地點：</span>${event.location}</div>
+                    <div class="event-detail"><span>名額：</span>${event.maxParticipants}</div>
                 </div>
                 ${isStudent
             ? `<button class="btn" onclick="registerForEvent('${event._id}')">報名參加</button>`
@@ -55,7 +164,7 @@ async function createEvent(eventData) {
     });
     if (result && result.success) {
         alert('活動建立成功！');
-        loadEvents('admin-events-list', false);
+        loadEvents('events-list', currentUser.role !== 'admin');
         closeModal();
     }
 }
@@ -64,66 +173,35 @@ async function deleteEvent(id) {
     if (!confirm('確定要刪除此活動嗎？')) return;
     const result = await fetchData(`/events/${id}`, { method: 'DELETE' });
     if (result && result.success) {
-        loadEvents('admin-events-list', false);
+        loadEvents('events-list', false);
     }
 }
 
 // --- Registration Functions ---
-// Hardcoded user ID for demo purposes since we don't have full auth UI yet
-// In a real app, this would come from the logged-in user context
-const DEMO_USER_ID = "6593456789abcdef12345678"; // We might need to create this user first or handle it dynamically
-
 async function registerForEvent(eventId) {
-    // For simplicity in this non-auth demo, we ask for a user ID or just create a random one if not exists?
-    // Let's prompt for a User ID to simulate "Logging in" or just use a fixed one if we seeded the DB.
-    // Better: Prompt user for Name/Email to "Quick Register" if we want to be fancy, but let's stick to the prompt's API.
-    // The prompt says "Student" role. 
-    // strategy: We will create a dummy user on the fly or check local storage.
-
-    let userId = localStorage.getItem('userId');
-    if (!userId) {
-        // Simple mock login flow
-        const name = prompt("請輸入您的姓名 (首次使用需註冊):");
-        const email = prompt("請輸入您的 Email:");
-        if (!name || !email) return;
-
-        // Try to find or create user (This part is tricky without an Auth API, 
-        // so we might need a helper endpoint or just assume the user exists if we populated data.
-        // BUT, since we changed to simple mode, let's just make a helper to create user if needed or just hardcode for now for the demo flow)
-
-        // Actually, we don't have a "Create User" API in the specific list from the prompt.
-        // It says "Users Collection" exists.
-        // I will add a small helper in the backend to create a user if not simple, OR just use the ID if known.
-        // Let's just prompt for the MongoDB ID for now or (better) let's unimplemented strictly strictly complying to the API list?
-        // Wait, the prompt requirements say "User Login" in the Demo part.
-        // So I should probably add a simple login/register endpoint or just "Enter User ID".
-        // Let's just ask for Name/Email and search/create in the backend (I'll need to modify backend slightly or just use direct DB access in a real app).
-
-        // WORKAROUND: For this "Simple" version without dedicated Auth API:
-        // I will assume the user knows their ID or I'll just hardcode one for "Demo Student".
-        // userId = prompt("請輸入您的 User ID (測試用):");
+    if (!currentUser) {
+        alert('請先登入才能報名');
+        openLoginModal();
+        return;
     }
 
-    // Let's implement a "Mock Login" in the UI that sets the User ID.
-    // implementing in index.html
-    userId = localStorage.getItem('userId');
-    if (!userId) {
-        alert('請先在右上角 "登入" (模擬)');
+    if (currentUser.role === 'admin') {
+        alert('管理員無法報名活動');
         return;
     }
 
     const result = await fetchData('/registrations', {
         method: 'POST',
-        body: JSON.stringify({ userId, eventId })
+        body: JSON.stringify({ userId: currentUser.id, eventId })
     });
 
     if (result && result.success) {
         alert('報名成功！');
-        loadMyRegistrations(userId);
     }
 }
 
 async function loadMyRegistrations(userId) {
+    if (!userId) return;
     const result = await fetchData(`/registrations/user/${userId}`);
     const container = document.getElementById('my-registrations-list');
     if (!result || !container) return;
@@ -138,8 +216,8 @@ async function loadMyRegistrations(userId) {
             <div class="card-body">
                 <h3 class="card-title">${reg.eventId.title}</h3>
                 <div class="card-subtitle">
-                    <span>📅 ${new Date(reg.eventId.date).toLocaleDateString()}</span>
-                    <span>📍 ${reg.eventId.location}</span>
+                    <div class="event-detail"><span>日期：</span>${new Date(reg.eventId.date).toLocaleDateString()}</div>
+                    <div class="event-detail"><span>地點：</span>${reg.eventId.location}</div>
                 </div>
                 <button class="btn btn-danger" onclick="cancelRegistration('${reg._id}', '${userId}')">取消報名</button>
             </div>
@@ -158,15 +236,29 @@ async function cancelRegistration(regId, userId) {
 
 // --- Admin Functions ---
 async function viewRegistrations(eventId) {
-    const result = await fetchData(`/registrations/event/${eventId}`); // Note: detailed in server code but maybe not in prompt list? I added it in server.js 
+    const result = await fetchData(`/registrations/event/${eventId}`);
     if (!result) return;
 
-    const list = result.data.map(r => `<li>${r.userId.name} (${r.userId.email})</li>`).join('') || '<li>尚無人報名</li>';
-    alert(`報名名單:\n<ul>${list}</ul>`); // Simple alert for now, or modal
-    // Better: show in modal
-    const modalContent = document.getElementById('modal-body-content');
-    if (modalContent) {
-        modalContent.innerHTML = `<h3>報名名單</h3><ul>${list}</ul>`;
-        document.getElementById('editModal').classList.add('show');
+    const listContent = document.getElementById('registrations-list-content');
+    const modal = document.getElementById('viewRegistrationsModal');
+
+    if (!result.data || result.data.length === 0) {
+        listContent.innerHTML = '<p class="text-muted">尚無人報名</p>';
+    } else {
+        const listHtml = result.data.map(r => `
+            <div style="padding: 0.75rem; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-weight: 600;">${r.userId.name}</div>
+                    <div style="font-size: 0.85rem; color: #666;">${r.userId.email}</div>
+                </div>
+            </div>
+        `).join('');
+        listContent.innerHTML = `<div style="max-height: 300px; overflow-y: auto;">${listHtml}</div>`;
     }
+
+    modal.classList.add('show');
+}
+
+function closeViewModal() {
+    document.getElementById('viewRegistrationsModal').classList.remove('show');
 }
