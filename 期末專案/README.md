@@ -43,9 +43,9 @@
 
 ```mermaid
 graph LR
-    User[使用者] -->|操作介面| Client[前端 (HTML/JS)]
-    Client -->|API 請求 (Fetch)| Server[後端 (Node.js/Express)]
-    Server -->|讀寫資料| DB[(MongoDB 資料庫)]
+    User[使用者] -->|操作介面| Client["前端 (HTML/JS)"]
+    Client -->|API 請求 (Fetch)| Server["後端 (Node.js/Express)"]
+    Server -->|讀寫資料| DB[("MongoDB 資料庫")]
 ```
 
 ### 報名流程圖 (CRUD Flow)
