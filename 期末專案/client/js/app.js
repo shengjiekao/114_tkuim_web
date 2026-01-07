@@ -39,8 +39,8 @@ function initAuth() {
 
     if (token && userStr) {
         currentUser = JSON.parse(userStr);
-        updateUI();
     }
+    updateUI();
 }
 
 function updateUI() {
@@ -111,11 +111,13 @@ function logout() {
 
 // --- Modal Logic ---
 function openLoginModal() {
+    document.body.classList.add('modal-open');
     document.getElementById('loginModal').classList.add('show');
     document.getElementById('registerModal').classList.remove('show');
 }
 
 function openRegisterModal() {
+    document.body.classList.add('modal-open');
     document.getElementById('registerModal').classList.add('show');
     document.getElementById('loginModal').classList.remove('show');
 }
@@ -126,35 +128,48 @@ function switchModal(type) {
 }
 
 function closeAuthModals() {
+    document.body.classList.remove('modal-open');
     document.getElementById('loginModal').classList.remove('show');
     document.getElementById('registerModal').classList.remove('show');
 }
 
 // --- Event Functions ---
 async function loadEvents(containerId, isStudent = true) {
-    const result = await fetchData('/events');
+    let endpoint = '/events';
+    if (!isStudent) {
+        endpoint += '?includeDeleted=true';
+    }
+
+    const result = await fetchData(endpoint);
     const container = document.getElementById(containerId);
     if (!result || !container) return;
 
-    container.innerHTML = result.data.map(event => `
-        <div class="card">
+    container.innerHTML = result.data.map(event => {
+        const isDeleted = event.isDeleted;
+        const opacityStyle = isDeleted ? 'opacity: 0.6; filter: grayscale(100%);' : '';
+        const statusBadge = isDeleted ? '<span style="background: #e11d48; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem;">已刪除</span>' : '';
+
+        return `
+        <div class="card" style="${opacityStyle}">
             <div class="card-image" style="background-image: url('${(event.image && event.image.startsWith('http')) ? event.image : 'images/' + (event.image || 'default.jpg')}');"></div>
             <div class="card-body">
-                <h3 class="card-title">${event.title}</h3>
+                <h3 class="card-title">${event.title} ${statusBadge}</h3>
                 <div class="card-subtitle">
                     <div class="event-detail"><span>日期：</span>${new Date(event.date).toLocaleDateString()}</div>
                     <div class="event-detail"><span>地點：</span>${event.location}</div>
                     <div class="event-detail"><span>名額：</span>${event.maxParticipants}</div>
                 </div>
                 ${isStudent
-            ? `<button class="btn" onclick="registerForEvent('${event._id}')">報名參加</button>`
-            : `<button class="btn" onclick="openEditModal('${event._id}')">編輯</button>
-                       <button class="btn btn-danger" onclick="deleteEvent('${event._id}')">刪除</button>
-                       <button class="btn" style="background-color: #6b7280;" onclick="viewRegistrations('${event._id}')">查看報名</button>`
-        }
+                ? `<button class="btn" onclick="registerForEvent('${event._id}')" ${isDeleted ? 'disabled' : ''}>報名參加</button>`
+                : (isDeleted
+                    ? `<button class="btn" style="background-color: #22c55e;" onclick="restoreEvent('${event._id}')">復原 (Restore)</button>`
+                    : `<button class="btn" onclick="openEditModal('${event._id}')">編輯</button>
+                   <button class="btn btn-danger" onclick="deleteEvent('${event._id}')">刪除</button>`)
+                + `<button class="btn" style="background-color: #6b7280; margin-top: 5px;" onclick="viewRegistrations('${event._id}')">查看報名</button>`
+            }
             </div>
         </div>
-    `).join('');
+    `}).join('');
 }
 
 async function createEvent(eventData) {
@@ -170,9 +185,18 @@ async function createEvent(eventData) {
 }
 
 async function deleteEvent(id) {
-    if (!confirm('確定要刪除此活動嗎？')) return;
+    if (!confirm('確定要移至垃圾桶嗎？(您可以隨時復原)')) return;
     const result = await fetchData(`/events/${id}`, { method: 'DELETE' });
     if (result && result.success) {
+        loadEvents('events-list', false);
+    }
+}
+
+async function restoreEvent(id) {
+    if (!confirm('確定要復原此活動嗎？')) return;
+    const result = await fetchData(`/events/${id}/restore`, { method: 'PUT' });
+    if (result && result.success) {
+        alert('活動已復原');
         loadEvents('events-list', false);
     }
 }
@@ -256,9 +280,163 @@ async function viewRegistrations(eventId) {
         listContent.innerHTML = `<div style="max-height: 300px; overflow-y: auto;">${listHtml}</div>`;
     }
 
+    document.body.classList.add('modal-open');
     modal.classList.add('show');
 }
 
 function closeViewModal() {
+    document.body.classList.remove('modal-open');
     document.getElementById('viewRegistrationsModal').classList.remove('show');
 }
+
+// --- UI & Navigation ---
+function showSection(id) {
+    document.getElementById('events-section').style.display = 'none';
+    document.getElementById('my-registrations-section').style.display = 'none';
+    document.getElementById(id + '-section').style.display = 'block';
+
+    // Update Active State
+    document.querySelectorAll('.nav-links a').forEach(link => link.classList.remove('active'));
+    // Attempt to find the link that matches. Since we use onclick there isn't a direct link reference easily available without "this"
+    // Using a simple heuristic or adding IDs to nav links would be better, but for now:
+    const navLinks = document.querySelectorAll('.nav-links a');
+    for (const link of navLinks) {
+        if (link.getAttribute('onclick') === `showSection('${id}')`) {
+            link.classList.add('active');
+        }
+    }
+
+    if (id === 'events') {
+        loadEvents('events-list', !currentUser || currentUser.role !== 'admin');
+    }
+    if (id === 'my-registrations') {
+        if (currentUser) {
+            loadMyRegistrations(currentUser.id);
+        } else {
+            alert('請先登入');
+            openLoginModal();
+            showSection('events');
+        }
+    }
+}
+
+const editModal = document.getElementById('editModal');
+
+function resetEventForm() {
+    document.getElementById('eventId').value = '';
+    document.getElementById('eventTitle').value = '';
+    document.getElementById('eventDesc').value = '';
+    document.getElementById('eventDate').value = '';
+    document.getElementById('eventLocation').value = '';
+    document.getElementById('eventImage').value = '';
+    document.getElementById('eventMax').value = '50';
+}
+
+function openCreateModal() {
+    resetEventForm();
+    document.body.classList.add('modal-open');
+    document.getElementById('editModal').classList.add('show');
+}
+
+async function openEditModal(id) {
+    const result = await fetchData(`/events/${id}`);
+    if (result && result.success) {
+        const e = result.data;
+        document.getElementById('eventId').value = e._id;
+        document.getElementById('eventTitle').value = e.title;
+        document.getElementById('eventDesc').value = e.description;
+        document.getElementById('eventDate').value = e.date ? e.date.split('T')[0] : '';
+        document.getElementById('eventLocation').value = e.location;
+        document.getElementById('eventImage').value = e.image || '';
+        document.getElementById('eventMax').value = e.maxParticipants;
+
+        document.body.classList.add('modal-open');
+        document.getElementById('editModal').classList.add('show');
+    } else {
+        alert('無法讀取活動資料');
+    }
+}
+
+function closeModal() {
+    document.body.classList.remove('modal-open');
+    editModal.classList.remove('show');
+}
+
+// Ensure functions are global for HTML onclicks
+window.showSection = showSection;
+window.openCreateModal = openCreateModal;
+window.openEditModal = openEditModal;
+window.closeModal = closeModal;
+window.viewRegistrations = viewRegistrations;
+window.closeViewModal = closeViewModal;
+window.deleteEvent = deleteEvent;
+window.registerForEvent = registerForEvent;
+window.cancelRegistration = cancelRegistration;
+window.switchModal = switchModal;
+window.openLoginModal = openLoginModal;
+window.logout = logout;
+window.restoreEvent = restoreEvent;
+
+
+// --- Initialization ---
+document.addEventListener('DOMContentLoaded', () => {
+    initAuth();
+
+    // Bind Close Buttons (using IDs added in HTML)
+    const closeLoginBtn = document.getElementById('closeLoginModalBtn');
+    if (closeLoginBtn) closeLoginBtn.onclick = closeAuthModals;
+
+    const closeRegBtn = document.getElementById('closeRegisterModalBtn');
+    if (closeRegBtn) closeRegBtn.onclick = closeAuthModals;
+
+    const closeViewRegBtn = document.getElementById('closeViewRegistrationsModalBtn');
+    if (closeViewRegBtn) closeViewRegBtn.onclick = closeViewModal;
+
+    // Bind Switch Buttons
+    const toRegBtn = document.getElementById('switchToRegisterBtn');
+    if (toRegBtn) toRegBtn.onclick = (e) => { e.preventDefault(); switchModal('register'); };
+
+    const toLoginBtn = document.getElementById('switchToLoginBtn');
+    if (toLoginBtn) toLoginBtn.onclick = (e) => { e.preventDefault(); switchModal('login'); };
+
+    // Bind Forms
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        login(document.getElementById('loginEmail').value, document.getElementById('loginPassword').value);
+    });
+
+    document.getElementById('registerForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        register(
+            document.getElementById('regName').value,
+            document.getElementById('regEmail').value,
+            document.getElementById('regPassword').value,
+            document.getElementById('regRole').value
+        );
+    });
+
+    document.getElementById('eventForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const id = document.getElementById('eventId').value;
+        const data = {
+            title: document.getElementById('eventTitle').value,
+            description: document.getElementById('eventDesc').value,
+            date: document.getElementById('eventDate').value,
+            location: document.getElementById('eventLocation').value,
+            image: document.getElementById('eventImage').value,
+            maxParticipants: parseInt(document.getElementById('eventMax').value)
+        };
+
+        if (id) { // Update
+            fetchData(`/events/${id}`, { method: 'PUT', body: JSON.stringify(data) }).then(res => {
+                if (res && res.success) {
+                    alert('更新成功');
+                    closeModal();
+                    loadEvents('events-list', currentUser ? currentUser.role !== 'admin' : true);
+                }
+            });
+        } else { // Create
+            createEvent(data);
+        }
+    });
+});

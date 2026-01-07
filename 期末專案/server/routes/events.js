@@ -3,10 +3,14 @@ const router = express.Router();
 const Event = require('../models/Event');
 const { auth, admin } = require('../middleware/auth');
 
-// GET /api/events - Get all events (Public)
+// GET /api/events - Get all events (Public: active only, Admin: all with filter option)
 router.get('/', async (req, res) => {
     try {
-        const events = await Event.find().sort({ date: 1 });
+        const filter = {};
+        if (req.query.includeDeleted !== 'true') {
+            filter.isDeleted = { $ne: true };
+        }
+        const events = await Event.find(filter).sort({ date: 1 });
         res.json({ success: true, data: events });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -47,12 +51,24 @@ router.put('/:id', auth, admin, async (req, res) => {
     }
 });
 
-// DELETE /api/events/:id - Delete event (Admin only)
+// DELETE /api/events/:id - Soft Delete event (Admin only)
 router.delete('/:id', auth, admin, async (req, res) => {
     try {
-        const deletedEvent = await Event.findByIdAndDelete(req.params.id);
-        if (!deletedEvent) return res.status(404).json({ success: false, message: 'Event not found' });
-        res.json({ success: true, message: 'Event deleted successfully' });
+        // Soft delete
+        const updatedEvent = await Event.findByIdAndUpdate(req.params.id, { isDeleted: true }, { new: true });
+        if (!updatedEvent) return res.status(404).json({ success: false, message: 'Event not found' });
+        res.json({ success: true, message: 'Event deleted (softly)', data: updatedEvent });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// PUT /api/events/:id/restore - Restore event (Admin only)
+router.put('/:id/restore', auth, admin, async (req, res) => {
+    try {
+        const updatedEvent = await Event.findByIdAndUpdate(req.params.id, { isDeleted: false }, { new: true });
+        if (!updatedEvent) return res.status(404).json({ success: false, message: 'Event not found' });
+        res.json({ success: true, message: 'Event restored', data: updatedEvent });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
