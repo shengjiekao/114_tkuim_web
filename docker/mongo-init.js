@@ -18,7 +18,7 @@ db.users.createIndex({ email: 1 }, { unique: true });
 // 預先建立管理員帳號（pwd 需先用 bcrypt 雜湊）
 db.users.insertOne({
   email: 'admin@example.com',
-  passwordHash: '$2b$10$4P6uyrAvH/e0K9..exampleHash12345',
+  passwordHash: '$2b$10$ze2hAjWgm3AMVGjoSSTgD.PGUDtX9/RhhwYDsT6tyY8P2jlc2sfQu',
   role: 'admin',
   createdAt: new Date()
 });
